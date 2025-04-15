@@ -1,90 +1,94 @@
-const fs = require('fs');
+const Post = require('../models/postModel');
 
-const posts = JSON.parse(
-  fs.readFileSync(`${__dirname}/../Capstone/dev-data/data/blogs-simple.json`)
-);
+exports.getAllPosts = async (req, res) => {
+  try {
+    const posts = await Post.find();
 
-exports.getAllPosts = (req, res) => {
-  console.log(req.requestTime);
-
-  res.status(200).json({
-    status: 'success',
-    requestedAt: req.requestTime,
-    results: posts.length,
-    data: {
-      posts,
-    },
-  });
-};
-
-exports.getPost = (req, res) => {
-  const id = req.params.id * 1;
-  const post = posts.find((el) => el.id === id);
-
-  if (!post) {
-    return res.status(400).json({
+    res.status(200).json({
+      status: 'success',
+      results: posts.length,
+      data: {
+        posts,
+      },
+    });
+  } catch (err) {
+    res.status(404).json({
       status: 'fail',
-      message: 'Invalid ID',
+      message: err,
     });
   }
-
-  res.status(200).json({
-    status: 'success',
-    requestedAt: req.requestTime,
-    data: {
-      post,
-    },
-  });
 };
 
-exports.createPost = (req, res) => {
-  const newId = posts[posts.length - 1].id + 1;
-  const newPost = Object.assign({ id: newId }, req.body);
-
-  posts.push(newPost);
-
-  fs.writeFile(
-    `${__dirname}/Capstone/dev-data/data/blogs-simple.json`,
-    JSON.stringify(posts),
-    (err) => {
-      res.status(201).json({
-        requestedAt: req.requestTime,
-        status: 'success',
-        data: {
-          posts: newPost,
-        },
-      });
-    }
-  );
-};
-
-exports.updatePost = (req, res) => {
-  if (req.params.id * 1 > posts.length) {
-    return res.status(404).json({
+exports.getPost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    res.status(200).json({
+      status: 'success',
+      requestedAt: req.requestTime,
+      data: {
+        post,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
       status: 'fail',
-      message: 'Invalid Id',
+      message: err,
     });
   }
-  res.status(200).json({
-    requestedAt: req.requestTime,
-    status: 'success',
-    data: {
-      post: '<Updated post here...>',
-    },
-  });
 };
 
-exports.deletePost = (req, res) => {
-  if (req.params.id * 1 > posts.length) {
-    return res.status(404).json({
+exports.createPost = async (req, res) => {
+  try {
+    const newPost = await Post.create(req.body);
+
+    res.status(201).json({
+      requestedAt: req.requestTime,
+      status: 'success',
+      data: {
+        posts: newPost,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
       status: 'fail',
-      message: 'Invalid ID',
+      message: 'Invalid data sent',
     });
   }
+};
 
-  res.status(204).json({
-    requestedAt: req.requestTime,
-    status: 'success',
-    data: null,
-  });
+exports.updatePost = async (req, res) => {
+  try {
+    const post = await Post.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    res.status(200).json({
+      requestedAt: req.requestTime,
+      status: 'success',
+      data: {
+        post,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err,
+    });
+  }
+};
+
+exports.deletePost = async (req, res) => {
+  try {
+    await Post.findByIdAndDelete(req.params.id);
+    res.status(204).json({
+      requestedAt: req.requestTime,
+      status: 'success',
+      data: null,
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err,
+    });
+  }
 };
