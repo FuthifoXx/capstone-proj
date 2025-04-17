@@ -1,9 +1,24 @@
 const Post = require('../models/postModel');
+const APIfeatures = require('../utils/apiFeatures');
+
+exports.aliasTopPost = (req, res, next) => {
+  req.query.limit = '3';
+  req.query.sort = '-ratingsAverage';
+  req.query.fields = 'title, subtitle,ratingAverage';
+  next();
+};
 
 exports.getAllPosts = async (req, res) => {
   try {
-    const posts = await Post.find();
+    //EXECUTE QUERY
+    const features = new APIfeatures(Post.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
+    const posts = await features.query;
 
+    //SEND RESPONSE
     res.status(200).json({
       status: 'success',
       results: posts.length,
@@ -51,7 +66,7 @@ exports.createPost = async (req, res) => {
   } catch (err) {
     res.status(400).json({
       status: 'fail',
-      message: 'Invalid data sent',
+      message: err,
     });
   }
 };
